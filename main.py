@@ -18,7 +18,7 @@ def download():
         return jsonify({"error": "No URL provided"}), 400
 
     unique_id = uuid.uuid4().hex
-    temp_folder = os.path.join(BASE_FOLDER, unique_id)
+    temp_folder = os.path.join(BASE_FOLDER, "temp_" + unique_id)
     os.makedirs(temp_folder, exist_ok=True)
     output_template = os.path.join(temp_folder, "%(title).70s.%(ext)s")
 
@@ -31,29 +31,34 @@ def download():
         "quiet": True,
         "external_downloader": "aria2c",
         "external_downloader_args": ["-x", "16", "-k", "1M"],
-        "ffmpeg_location": "/usr/bin/ffmpeg",  # change if it's in a different location
+        "ffmpeg_location": "/usr/bin/ffmpeg",
     }
 
     try:
         with YoutubeDL(ydl_opts) as ydl:
-            result = ydl.download([url])
+            ydl.download([url])
     except Exception as e:
         shutil.rmtree(temp_folder, ignore_errors=True)
         return jsonify({"error": str(e)}), 500
 
     try:
-        # Get the first file from the folder
         downloaded_files = [f for f in os.listdir(temp_folder) if f.endswith(".mp4")]
         if not downloaded_files:
+            shutil.rmtree(temp_folder, ignore_errors=True)
             return jsonify({"error": "Download failed"}), 500
-        final_filename = downloaded_files[0]
-        return jsonify({"file": f"{unique_id}/{final_filename}"})
+
+        source_file = os.path.join(temp_folder, downloaded_files[0])
+        final_file_path = os.path.join(BASE_FOLDER, f"{unique_id}.mp4")
+        shutil.move(source_file, final_file_path)
+        shutil.rmtree(temp_folder, ignore_errors=True)
+
+        return jsonify({"file": f"{unique_id}.mp4"})
     except Exception as e:
         shutil.rmtree(temp_folder, ignore_errors=True)
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/file/<path:filename>")
+@app.route("/file/<filename>")
 def get_file(filename):
     try:
         return send_from_directory(BASE_FOLDER, filename, as_attachment=True)
