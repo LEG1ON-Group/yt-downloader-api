@@ -1,6 +1,12 @@
 services:
   - type: web
-    name: youtube-api
+    name: youtube-api-fast
     env: python
-    buildCommand: ""
-    startCommand: "python main.py"
+    buildCommand: |
+      apt-get update && apt-get install -y aria2 ffmpeg
+      pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    plan: free
