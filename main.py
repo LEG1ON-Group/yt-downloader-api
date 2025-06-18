@@ -16,9 +16,10 @@ def download_video():
     output_path = f"/tmp/{filename}"
 
     ydl_opts = {
-        'outtmpl': output_path,
-        'format': 'bestvideo+bestaudio/best',
-        'merge_output_format': 'mp4'
+        "outtmpl": output_path,
+        "format": "bestvideo+bestaudio/best",
+        "merge_output_format": "mp4",
+        "cookiefile": "cookies.txt",  # 👈 Bu qatorni qo‘shing
     }
 
     try:
