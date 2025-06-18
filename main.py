@@ -22,9 +22,42 @@ def download():
     os.makedirs(temp_folder, exist_ok=True)
     output_template = os.path.join(temp_folder, "%(title).70s.%(ext)s")
 
+    # Step 1: Extract info without downloading
+    try:
+        with YoutubeDL({"quiet": True, "cookiefile": "cookies.txt"}) as ydl:
+            info = ydl.extract_info(url, download=False)
+    except Exception as e:
+        shutil.rmtree(temp_folder, ignore_errors=True)
+        return jsonify({"error": "Failed to fetch metadata: " + str(e)}), 500
+
+    # Step 2: Check file size of best format
+    max_size_bytes = 500 * 1024 * 1024  # 500 MB
+    formats = info.get("formats", [])
+    best_format = None
+
+    # Get best format under size limit
+    for fmt in reversed(formats):  # start from best
+        filesize = fmt.get("filesize") or fmt.get("filesize_approx")
+        if filesize and filesize <= max_size_bytes and fmt.get("ext") == "mp4":
+            best_format = fmt["format_id"]
+            break
+
+    # If no small-enough format found
+    if not best_format:
+        shutil.rmtree(temp_folder, ignore_errors=True)
+        return (
+            jsonify(
+                {
+                    "error": "Video file is too large (over 500MB) and cannot be downscaled automatically."
+                }
+            ),
+            413,
+        )
+
+    # Step 3: Download using selected format
     ydl_opts = {
         "outtmpl": output_template,
-        "format": "bestvideo+bestaudio/best",
+        "format": best_format,
         "merge_output_format": "mp4",
         "cookiefile": "cookies.txt",
         "noplaylist": True,
