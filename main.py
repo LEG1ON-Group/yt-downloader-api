@@ -5,7 +5,6 @@ from yt_dlp import YoutubeDL
 
 app = Flask(__name__)
 
-# 📁 Create folder if not exists
 DOWNLOAD_FOLDER = os.path.join(os.getcwd(), "static", "videos")
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
@@ -35,7 +34,14 @@ def download():
         return jsonify({"error": str(e)}), 500
 
 
-# 🛣️ Static file route (for download)
 @app.route("/file/<filename>")
 def get_file(filename):
     return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
+
+
+@app.route('/', methods=['GET'])
+def index():
+    return "YouTube API is running"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
